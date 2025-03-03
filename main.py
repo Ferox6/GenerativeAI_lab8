@@ -4,46 +4,52 @@ import torch
 from diffusers.utils import load_image, make_image_grid
 import tkinter as tk
 
-
 model_id = "C:\Progs\stable-diffusion-1.5"
 pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
 pipe = pipe.to("cuda")
 
-
 root = Tk()
-root.title("Stable Diffusion App")
+root.title("Image Generation")
 root.geometry("600x600")
 
-
-prompt_label = Label(root, text="Enter your prompt:")
-prompt_label.pack()
+Label(root, text="Enter your prompt:").pack()
 prompt_entry = Entry(root, width=50)
 prompt_entry.pack()
 
+Label(root, text="Enter negative prompt:").pack()
+negative_prompt_entry = Entry(root, width=50)
+negative_prompt_entry.pack()
+
+Label(root, text="Guidance scale (1-15):").pack()
+guidance_entry = Entry(root, width=10)
+guidance_entry.pack()
+guidance_entry.insert(0, "7.5")
+
 def image_generator():
-    prompt = prompt_entry.get()
-    if not prompt:
-        prompt = "a photo of an astronaut riding a horse on the moon"
-    image = pipe(prompt).images[0]
+    prompt = prompt_entry.get() or "a photo of a monkey relaxing on a beach"
+    negative_prompt = negative_prompt_entry.get() or "low quality, blurry, distorted"
+    guidance_scale = float(guidance_entry.get()) if guidance_entry.get().isdigit() else 7.5
+
+    image = pipe(prompt, negative_prompt=negative_prompt, guidance_scale=guidance_scale).images[0]
     image.save("generated_image.png")
     print("Image saved as generated_image.png")
+
 
 def image_based_generator():
     proto_image = "monkey2.jpg"
     init_image = load_image(proto_image)
-    prompt = prompt_entry.get()
-    if not prompt:
-        prompt = "cool monkey, wide smile, black glasses, realistic style"
-    grid_image = pipe(prompt, image=init_image).images[0]
-    grid_image = make_image_grid([init_image, grid_image],rows = 1, cols = 2)
+    prompt = prompt_entry.get() or "cool monkey, wide smile, black glasses, realistic style"
+    negative_prompt = negative_prompt_entry.get() or "low quality, blurry, distorted"
+    guidance_scale = float(guidance_entry.get()) if guidance_entry.get().isdigit() else 7.5
+
+    grid_image = pipe(prompt, image=init_image, negative_prompt=negative_prompt, guidance_scale=guidance_scale).images[
+        0]
+    grid_image = make_image_grid([init_image, grid_image], rows=1, cols=2)
     grid_image.save("modified_image.png")
     print("Image saved as modified_image.png")
 
 
-show_btn = Button(root, text="Generate Image", command=image_generator)
-show_btn.pack(fill=tk.BOTH, expand=True)
-
-cut_btn = Button(root, text="Modify Image", command=image_based_generator)
-cut_btn.pack(fill=tk.BOTH, expand=True)
+Button(root, text="Generate Image", command=image_generator).pack(fill=tk.BOTH, expand=True)
+Button(root, text="Modify Image", command=image_based_generator).pack(fill=tk.BOTH, expand=True)
 
 root.mainloop()
